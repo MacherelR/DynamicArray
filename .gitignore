@@ -1,2 +1,6 @@
 /build
 dynamic_array.cpython-311-darwin.so
+/btree
+/.vscode
+trf.cpp
+test.ipynb

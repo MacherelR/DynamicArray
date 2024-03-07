@@ -4,17 +4,28 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <sstream>
-#include "btree/map.h"
 
 namespace py = pybind11;
 
 class DynamicArray {
-protected:
-    btree::map<long, std::vector<double>> data; // 2D array for storing rows of data
+private:
+    std::map<long int, std::vector<double>> data; // 2D array for storing rows of data
     size_t cols; // Number of columns, fixed
 
 public:
     DynamicArray(size_t columns) : cols(columns) {}
+
+    // void addRow(const std::vector<double>& newRow) {
+    //     if (newRow.size() != cols) {
+    //         std::cerr << "Error: newRow must have the correct number of columns." << std::endl;
+    //         return;
+    //     }
+    //     auto it = std::lower_bound(data.begin(), data.end(), newRow,
+    //         [](const std::vector<double>& a, const std::vector<double>& b) {
+    //             return a.front() < b.front();
+    //         });
+    //     data.insert(it, newRow); // Insert newRow at the correct position
+    // }
 
     void deleteRow(long int timestamp) {
         auto it = data.find(timestamp);
@@ -23,15 +34,6 @@ public:
         } else {
             std::cerr << "Error: Timestamp not found." << std::endl;
         }
-    }
-
-    void deleteRange(long int timestamp, int numberOfValues) {
-        auto it = data.lower_bound(timestamp);
-        // Retrieve iterator for item that is numberOfValues before the timestamp
-        if (it != data.begin()) {
-            std::advance(it, -numberOfValues);
-        }
-        data.erase(it, data.lower_bound(timestamp));
     }
 
     void deleteRowById(int index) {
