@@ -5,3 +5,5 @@ dynamic_array_cython.cpython-311-darwin.so
 trf.cpp
 test.ipynb
 DynamicArray_save_btree.cpp
+DynamicArray_saveMap.cpp
+DynamicArray_save.cpp
