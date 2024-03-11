@@ -8,14 +8,14 @@
 
 namespace py = pybind11;
 
-class DynamicArray {
+class DynamicArrayCython {
 protected:
   btree::map<long, std::vector<double>>
       data;    // 2D array for storing rows of data
   size_t cols; // Number of columns, fixed
 
 public:
-  DynamicArray(size_t columns) : cols(columns) {}
+  DynamicArrayCython(size_t columns) : cols(columns) {}
 
   void deleteRow(long int timestamp) {
     auto it = data.find(timestamp);
