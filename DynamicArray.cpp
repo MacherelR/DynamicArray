@@ -173,7 +173,6 @@ public:
         res(i, j) = currentRow[j];
       }
     }
-
     return result;
   }
 
