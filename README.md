@@ -11,6 +11,7 @@ python setup.py build_ext --inplace
 ```
 
 This will generate an .so file that can be used in a python app. The file will be generated in the same directory as the setup.py file.
+C++ code is currently built using 03 flag for optimization. This can be changed in the setup.py file.
 
 ## External libraries
 
