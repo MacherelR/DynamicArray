@@ -2,7 +2,7 @@
 
 DynamicArrayCython::DynamicArrayCython(size_t columns) : cols(columns) {}
 
-void DynamicArrayCython::deleteRow(long int timestamp) {
+void DynamicArrayCython::deleteRow(long timestamp) {
   auto it = data.find(timestamp);
   if (it != data.end()) {
     data.erase(it);
@@ -19,7 +19,7 @@ void DynamicArrayCython::removeFirstElement() {
   }
 }
 
-void DynamicArrayCython::deleteRange(long int timestamp, int numberOfValues) {
+void DynamicArrayCython::deleteRange(long timestamp, int numberOfValues) {
   auto it = data.lower_bound(timestamp);
   // Retrieve iterator for item that is numberOfValues before the timestamp
   if (it != data.begin()) {
@@ -38,7 +38,7 @@ void DynamicArrayCython::deleteRowById(int index) {
   data.erase(it);
 }
 
-bool DynamicArrayCython::timestampExists(double timestamp) const {
+bool DynamicArrayCython::timestampExists(long timestamp) const {
   return data.find(timestamp) != data.end();
 }
 

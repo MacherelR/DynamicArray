@@ -51,7 +51,7 @@ cdef class PyDynamicArrayCython:
     def delete_row_by_id(self, int index):
         self.thisptr.deleteRowById(index)
 
-    def timestamp_exists(self, double timestamp):
+    def timestamp_exists(self, long timestamp):
         return self.thisptr.timestampExists(timestamp)
 
     def get_num_rows(self):

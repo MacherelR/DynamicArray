@@ -1,6 +1,7 @@
 /build
 dynamic_array.cpython-311-darwin.so
 dynamic_array_cython.cpython-311-darwin.so
+dynamic_buffer.cpython-311-darwin.so
 /.vscode
 trf.cpp
 test.ipynb
@@ -8,3 +9,5 @@ DynamicArray_save_btree.cpp
 DynamicArray_saveMap.cpp
 DynamicArray_save.cpp
 save.cpp
+testScript.py
+/.DS_Store

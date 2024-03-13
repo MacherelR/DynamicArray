@@ -10,17 +10,17 @@
 class DynamicArrayCython {
 protected:
   std::map<long, std::vector<double>> data; // 2D array for storing rows of data
-  size_t cols;                              // Number of columns, fixed
+  size_t cols;                             // Number of columns, fixed
 
 public:
   DynamicArrayCython(size_t columns);
 
-  void deleteRow(long int timestamp);
+  void deleteRow(long timestamp);
   void removeFirstElement();
-  void deleteRange(long int timestamp, int numberOfValues);
+  void deleteRange(long timestamp, int numberOfValues);
   void deleteRowById(int index);
 
-  bool timestampExists(double timestamp) const;
+  bool timestampExists(long timestamp) const;
   size_t getNumRows() const;
   void print() const;
 
