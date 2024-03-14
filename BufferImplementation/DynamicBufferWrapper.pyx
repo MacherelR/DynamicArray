@@ -18,7 +18,16 @@ cdef extern from "DynamicBuffer.h":
         const double *getRecordByTimestampPtr(long timestamp, size_t &outSize) const
         const double *getSlice(long timestamp, size_t N, size_t &outSize) const
         size_t getNVariables() const
+        void removeFront(size_t removeCount)
+        long minKey() const
+        long maxKey() const
+        size_t getNumRows() const
 
+cdef extern from "DynamicCounter.h":
+    cdef cppclass DynamicCounter(DynamicBuffer):
+        DynamicCounter(size_t windowSize) except +
+        void updateCounterValue(long timestamp, int diff)
+        size_t countSubsequentZeros() const
 
 cdef class PyDynamicBuffer:
     cdef DynamicBuffer *thisptr
@@ -61,3 +70,26 @@ cdef class PyDynamicBuffer:
 
         # Note: Setting mode='c' ensures the NumPy array is C-contiguous
         return np.PyArray_SimpleNewFromData(2, dims, np.NPY_FLOAT64, <void*>slice)
+
+    def remove_front(self, size_t removeCount):
+        self.thisptr.removeFront(removeCount)
+
+    def min_key(self):
+        return self.thisptr.minKey()
+
+    def max_key(self):
+        return self.thisptr.maxKey()
+
+    def get_num_rows(self):
+        return self.thisptr.getNumRows()
+
+
+cdef class PyDynamicCounter(PyDynamicBuffer):
+    def __cinit(self, size_t windowSize):
+        self.thisptr = new DynamicCounter(windowSize)
+
+    def update_counter_value(self, long timestamp, int diff):
+        (<DynamicCounter*>self.thisptr).updateCounterValue(timestamp, diff)
+
+    def count_subsequent_zeros(self):
+        return (<DynamicCounter*>self.thisptr).countSubsequentZeros()

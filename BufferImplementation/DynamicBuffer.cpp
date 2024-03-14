@@ -40,41 +40,44 @@ void DynamicBuffer::addOrUpdateRecord(long timestamp, size_t columnIndex,
   }
 
   size_t dataIndex;
-  // Check if this timestamp already exists.
   auto it = indexes.find(timestamp);
+  auto nextTimestampIt = indexes.end(); // Initialize to end as a default
+
   if (it != indexes.end()) {
-    // Timestamp exists: calculate the direct index in the data vector and
-    // update the value.
+    // Timestamp exists: update the value directly.
     dataIndex = it->second + columnIndex;
-    data[dataIndex] = value;
-  } else {
-    // Timestamp does not exist: we need to insert a new record.
-    if (indexes.empty() || timestamp > indexes.rbegin()->first) {
-      // Insert at the end if the map is empty or this is the newest timestamp.
-      dataIndex = data.size();
-      indexes[timestamp] = dataIndex;
-      data.resize(
-          dataIndex + nVariables,
-          std::nan(
-              "")); // Ensure space for nVariables, filling new spots with NaN.
+    if (dataIndex < bufferLength) {
+      data[dataIndex] = value;
     } else {
-      // Find the correct position for this timestamp.
-      auto nextTimestampIt = indexes.upper_bound(timestamp);
-      dataIndex = nextTimestampIt->second;
-      indexes[timestamp] = dataIndex;
-
-      // Shift data for existing timestamps forward by nVariables positions.
-      data.insert(data.begin() + dataIndex, nVariables, std::nan(""));
-
-      // Update indexes for all timestamps after this one.
-      for (auto updateIt = nextTimestampIt; updateIt != indexes.end();
-           ++updateIt) {
-        updateIt->second += nVariables;
-      }
+      throw std::out_of_range("Attempting to write beyond the buffer length");
+    }
+  } else {
+    // Timestamp does not exist: determine insertion point.
+    if (indexes.empty() || timestamp > indexes.rbegin()->first) {
+      dataIndex =
+          (!indexes.empty()) ? (indexes.rbegin()->second + nVariables) : 0;
+    } else {
+      nextTimestampIt = indexes.upper_bound(timestamp);
+      dataIndex =
+          (nextTimestampIt != indexes.end()) ? nextTimestampIt->second : 0;
     }
 
-    // Set the value for the specified column in the new record.
-    data[dataIndex + columnIndex] = value;
+    // Update indexes and data.
+    indexes[timestamp] = dataIndex;
+
+    if (dataIndex + columnIndex < bufferLength) {
+      data[dataIndex + columnIndex] = value;
+      // Shift data or update indexes for all timestamps after this one, if
+      // necessary.
+      if (nextTimestampIt != indexes.end()) {
+        for (auto updateIt = nextTimestampIt; updateIt != indexes.end();
+             ++updateIt) {
+          updateIt->second += nVariables;
+        }
+      }
+    } else {
+      throw std::out_of_range("Attempting to write beyond the buffer length");
+    }
   }
 }
 
@@ -162,3 +165,50 @@ const double *DynamicBuffer::getSlice(long timestamp, size_t N,
 }
 
 size_t DynamicBuffer::getNVariables() const { return nVariables; }
+
+void DynamicBuffer::removeFront(size_t removeCount) {
+  size_t originalSize = data.size();
+  size_t elementsToRemove = removeCount * nVariables;
+  if (removeCount >= originalSize) {
+    // Clear the vector if removing more or equal elements than contained
+    data.clear();
+    // Fill the entire vector with NaN, maintaining original size
+    data.resize(originalSize, std::nan(""));
+    // Clear indexes map as all elements are removed
+    indexes.clear();
+  } else {
+    // Move the remaining elements to the beginning
+    std::move(data.begin() + elementsToRemove, data.end(), data.begin());
+    // Resize the vector down, then back up to original size, filling with NaNs
+    data.resize(originalSize - elementsToRemove);
+    std::fill_n(std::back_inserter(data), elementsToRemove, std::nan(""));
+
+    // Adjust the indexes map:
+    // Create a new map to store updated indexes
+    std::map<long, size_t> updatedIndexes;
+    for (const auto &pair : indexes) {
+      if (pair.second >= elementsToRemove) {
+        updatedIndexes[pair.first] = pair.second - elementsToRemove;
+      }
+    }
+    // Swap the updated map with the old one
+    indexes.swap(updatedIndexes);
+  }
+}
+
+long DynamicBuffer::minKey() const {
+  if (indexes.empty()) {
+    std::cerr << "Error: No data available." << std::endl;
+    return -1;
+  }
+  return indexes.begin()->first;
+}
+long DynamicBuffer::maxKey() const {
+  if (indexes.empty()) {
+    std::cerr << "Error: No data available." << std::endl;
+    return -1;
+  }
+  return indexes.rbegin()->first;
+}
+
+size_t DynamicBuffer::getNumRows() const { return indexes.size(); }

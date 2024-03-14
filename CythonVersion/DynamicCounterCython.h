@@ -9,5 +9,4 @@ public:
 
   void updateCounterValue(long timestamp, int diff);
 };
-
 #endif // DYNAMIC_COUNTER_H

@@ -7,8 +7,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+#include "constants.h"
 
-const size_t DEFAULT_BUFFER_LENGTH_FACTOR = 3;
+
 
 class DynamicBuffer {
 protected:
@@ -44,6 +45,12 @@ public:
   std::vector<double> getSliceByIndex(size_t start, size_t end) const;
 
   size_t getNVariables() const;
+
+  void removeFront(size_t removeCount);
+
+  long minKey() const;
+  long maxKey() const;
+  size_t getNumRows() const;
 };
 
 #endif // DYNAMIC_BUFFER_H
