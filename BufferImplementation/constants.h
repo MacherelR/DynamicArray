@@ -4,5 +4,6 @@
 
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
-constexpr size_t DEFAULT_BUFFER_LENGTH_FACTOR = 3;
-#endif //CONSTANTS_H
+#include <cstddef>
+constexpr size_t DEFAULT_BUFFER_LENGTH_FACTOR = 2;
+#endif // CONSTANTS_H

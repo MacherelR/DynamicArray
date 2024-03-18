@@ -6,7 +6,7 @@ extra_compile_args=['-std=c++14', '-O3']
 
 extensions = [
     Extension("dynamic_buffer",
-              sources=["DynamicBufferWrapper.pyx", "DynamicBuffer.cpp"],
+              sources=["DynamicBufferWrapper.pyx"],
               include_dirs=[numpy.get_include()],
               language="c++",
               extra_compile_args=extra_compile_args)

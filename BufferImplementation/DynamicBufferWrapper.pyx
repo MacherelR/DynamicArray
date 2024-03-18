@@ -22,12 +22,10 @@ cdef extern from "DynamicBuffer.h":
         long minKey() const
         long maxKey() const
         size_t getNumRows() const
-
-cdef extern from "DynamicCounter.h":
-    cdef cppclass DynamicCounter(DynamicBuffer):
-        DynamicCounter(size_t windowSize) except +
-        void updateCounterValue(long timestamp, int diff)
-        size_t countSubsequentZeros() const
+        vector[long] getSliceTimestamps(long timestamp, size_t N) const
+        void decrementCounters(const vector[long]& timestamps)
+        vector[int] getCounters() const
+        void printCounters() const
 
 cdef class PyDynamicBuffer:
     cdef DynamicBuffer *thisptr
@@ -71,6 +69,10 @@ cdef class PyDynamicBuffer:
         # Note: Setting mode='c' ensures the NumPy array is C-contiguous
         return np.PyArray_SimpleNewFromData(2, dims, np.NPY_FLOAT64, <void*>slice)
 
+    def get_slice_timestamps(self, long timestamp, size_t N):
+        cdef vector[long] timestamps = self.thisptr.getSliceTimestamps(timestamp, N)
+        return [timestamp for timestamp in timestamps]
+
     def remove_front(self, size_t removeCount):
         self.thisptr.removeFront(removeCount)
 
@@ -83,13 +85,15 @@ cdef class PyDynamicBuffer:
     def get_num_rows(self):
         return self.thisptr.getNumRows()
 
+    def decrement_counters(self, list timestamps):
+        cdef vector[long] cpp_timestamps = vector[long]()
+        for timestamp in timestamps:
+            cpp_timestamps.push_back(timestamp)
+        self.thisptr.decrementCounters(cpp_timestamps)
 
-cdef class PyDynamicCounter(PyDynamicBuffer):
-    def __cinit(self, size_t windowSize):
-        self.thisptr = new DynamicCounter(windowSize)
+    def get_counters(self):
+        cdef vector[int] counters = self.thisptr.getCounters()
+        return [counter for counter in counters]
 
-    def update_counter_value(self, long timestamp, int diff):
-        (<DynamicCounter*>self.thisptr).updateCounterValue(timestamp, diff)
-
-    def count_subsequent_zeros(self):
-        return (<DynamicCounter*>self.thisptr).countSubsequentZeros()
+    def print_counters(self):
+        self.thisptr.printCounters()
