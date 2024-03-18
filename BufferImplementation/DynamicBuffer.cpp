@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <vector>
 
+const bool DEBUG = false;
+
 DynamicBuffer::DynamicBuffer(size_t nVariables, size_t windowSize)
     : nVariables(nVariables), windowSize(windowSize),
       bufferLength(DEFAULT_BUFFER_LENGTH_FACTOR * windowSize * nVariables),
@@ -41,9 +43,12 @@ void DynamicBuffer::addOrUpdateRecord(long timestamp, size_t columnIndex,
   if (columnIndex >= nVariables) {
     throw std::invalid_argument("Column index out of range");
   }
-  // std::cout << "Inserting or updating data. Size is : " << indexes.size()
-  //           << ", Timestamp is : " << timestamp << ", value is : " << value
-  //           << std::endl;
+  if (DEBUG) {
+    std::cout << "Inserting or updating data. Size is : " << indexes.size()
+              << ", Timestamp is : " << timestamp << ", value is : " << value
+              << std::endl;
+  }
+
   size_t dataIndex;
   auto it = indexes.find(timestamp);
   auto nextTimestampIt = indexes.end(); // Initialize to end as a default
@@ -78,6 +83,10 @@ void DynamicBuffer::addOrUpdateRecord(long timestamp, size_t columnIndex,
 
     // Update indexes and data.
     indexes[timestamp] = dataIndex;
+    // Update indexes map:
+    for (auto iter = nextTimestampIt; iter != indexes.end(); ++iter) {
+      iter->second += nVariables;
+    }
 
     if (dataIndex + columnIndex < bufferLength) {
       data[dataIndex + columnIndex] = value;
@@ -95,8 +104,10 @@ void DynamicBuffer::addOrUpdateRecord(long timestamp, size_t columnIndex,
       throw std::out_of_range("Attempting to write beyond the buffer length");
     }
   }
-  // std::cout << "Value " << value << " at timestamp " << timestamp << "
-  // inserted !" << std::endl;
+  if (DEBUG) {
+    std::cout << "Value " << value << " at timestamp " << timestamp
+              << " inserted !" << std::endl;
+  }
 }
 
 void DynamicBuffer::print() const {
@@ -205,10 +216,12 @@ std::vector<long> DynamicBuffer::getSliceTimestamps(long timestamp,
 size_t DynamicBuffer::getNVariables() const { return nVariables; }
 
 void DynamicBuffer::removeFront(size_t removeCount) {
-  // std::cout << "Removing " << removeCount << " elements from the front"
-  //           << std::endl;
-  // std::cout << "Indexes size before removing: " << indexes.size() <<
-  // std::endl;
+  if (DEBUG) {
+    std::cout << "Removing " << removeCount << " elements from the front"
+              << std::endl;
+    std::cout << "Indexes size before removing: " << indexes.size()
+              << std::endl;
+  }
   size_t originalSize = data.size();
   size_t elementsToRemove = removeCount * nVariables;
   if (removeCount >= originalSize) {
@@ -240,9 +253,10 @@ void DynamicBuffer::removeFront(size_t removeCount) {
     // Swap the updated map with the old one
     indexes.swap(updatedIndexes);
   }
-  // std::cout << "Front elements removed" << std::endl;
-  // std::cout << "Indexes size after removing: " << indexes.size() <<
-  // std::endl;
+  if (DEBUG) {
+    std::cout << "Front elements removed" << std::endl;
+    std::cout << "Indexes size after removing: " << indexes.size() << std::endl;
+  }
 }
 
 long DynamicBuffer::minKey() const {
@@ -263,18 +277,27 @@ long DynamicBuffer::maxKey() const {
 size_t DynamicBuffer::getNumRows() const { return indexes.size(); }
 
 bool DynamicBuffer::hasEnoughRoomForNewRecord() {
-  // std::cout << "In hasEnoughRoom.. indexes size : " << indexes.size()
-  //           << " pid is : " << getpid() << std::endl;
+  if (DEBUG) {
+    std::cout << "In hasEnoughRoom.. indexes size : " << indexes.size()
+              << " pid is : " << getpid() << std::endl;
+  }
+
   if (indexes.size() < (DEFAULT_BUFFER_LENGTH_FACTOR * windowSize))
     return true;
 
-  // std::cout << "Buffer is full, removing oldest record" << std::endl;
+  if (DEBUG) {
+    std::cout << "Buffer is full, removing oldest record" << std::endl;
+  }
+
   return false;
 }
 
 void DynamicBuffer::removeZeroCount() {
   int nZeros = countSubsequentZerosCounters();
-  // std::cout << "Removing " << nZeros << " zero counters" << std::endl;
+  if (DEBUG) {
+    std::cout << "Removing " << nZeros << " zero counters" << std::endl;
+  }
+
   if (nZeros > 0) {
     removeFront(nZeros);
   }
