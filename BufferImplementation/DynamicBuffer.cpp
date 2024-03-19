@@ -64,7 +64,9 @@ void DynamicBuffer::addOrUpdateRecord(long timestamp, size_t columnIndex,
       throw std::out_of_range("Attempting to write beyond the buffer length");
     }
   } else {
+    // Check if there is enough room for a new record
     if (!hasEnoughRoomForNewRecord()) {
+      // Remove all rows with zero counters
       removeZeroCount();
       if (!hasEnoughRoomForNewRecord()) {
         throw std::out_of_range("Buffer is full and can't be emptied further.");
@@ -111,6 +113,7 @@ void DynamicBuffer::addOrUpdateRecord(long timestamp, size_t columnIndex,
 }
 
 void DynamicBuffer::print() const {
+  // Debug method to print the contents of the buffer
   for (const auto &pair : indexes) {
     long timestamp = pair.first;
     size_t startIndex = pair.second;
