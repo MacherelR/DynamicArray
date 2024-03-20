@@ -59,6 +59,7 @@ public:
 
   void printCounters() const;
   std::vector<int> getCounters() const;
+  void printIndexes() const;
 };
 
 #endif // DYNAMIC_BUFFER_H

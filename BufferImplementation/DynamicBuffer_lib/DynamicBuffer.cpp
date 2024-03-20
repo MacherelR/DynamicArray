@@ -1,15 +1,17 @@
 #include "DynamicBuffer.h"
 #include "constants.h"
+#include <algorithm>
 #include <unistd.h>
 #include <vector>
 
 const bool DEBUG = false;
 
 DynamicBuffer::DynamicBuffer(size_t nVariables, size_t windowSize)
-    : nVariables(nVariables), windowSize(windowSize),
-      bufferLength(DEFAULT_BUFFER_LENGTH_FACTOR * windowSize * nVariables),
-      data(bufferLength, std::nan("")),
-      counters((DEFAULT_BUFFER_LENGTH_FACTOR * windowSize), 0) {}
+  : nVariables(nVariables), windowSize(windowSize),
+    bufferLength(DEFAULT_BUFFER_LENGTH_FACTOR * windowSize * nVariables),
+    data(bufferLength, std::nan("")),
+    counters((DEFAULT_BUFFER_LENGTH_FACTOR * windowSize), 0) {
+}
 
 bool DynamicBuffer::deleteRecord(long timestamp) {
   // Find the index for the given timestamp
@@ -29,7 +31,7 @@ bool DynamicBuffer::deleteRecord(long timestamp) {
   indexes.erase(it);
 
   // Adjust subsequent indexes in the map
-  for (auto &entry : indexes) {
+  for (auto &entry: indexes) {
     if (entry.second > startIndex) {
       entry.second -= nVariables;
     }
@@ -45,8 +47,8 @@ void DynamicBuffer::addOrUpdateRecord(long timestamp, size_t columnIndex,
   }
   if (DEBUG) {
     std::cout << "Inserting or updating data. Size is : " << indexes.size()
-              << ", Timestamp is : " << timestamp << ", value is : " << value
-              << std::endl;
+        << ", Timestamp is : " << timestamp << ", value is : " << value
+        << std::endl;
   }
 
   size_t dataIndex;
@@ -73,48 +75,43 @@ void DynamicBuffer::addOrUpdateRecord(long timestamp, size_t columnIndex,
       }
     }
 
-    // Timestamp does not exist: determine insertion point.
     if (indexes.empty() || timestamp > indexes.rbegin()->first) {
-      dataIndex =
-          (!indexes.empty()) ? (indexes.rbegin()->second + nVariables) : 0;
+      dataIndex = (!indexes.empty()) ? (indexes.rbegin()->second + nVariables) : 0;
     } else {
-      nextTimestampIt = indexes.upper_bound(timestamp);
-      dataIndex =
-          (nextTimestampIt != indexes.end()) ? nextTimestampIt->second : 0;
-    }
+      auto nextTimestampIt = indexes.upper_bound(timestamp);
+      dataIndex = (nextTimestampIt != indexes.end()) ? nextTimestampIt->second : 0;
 
-    // Update indexes and data.
-    indexes[timestamp] = dataIndex;
-    // Update indexes map:
-    for (auto iter = nextTimestampIt; iter != indexes.end(); ++iter) {
-      iter->second += nVariables;
-    }
+      // Prepare to move data: resize the vector to make room for the new record
+      data.resize(data.size() + nVariables, std::nan(""));
 
-    if (dataIndex + columnIndex < bufferLength) {
-      data[dataIndex + columnIndex] = value;
-      // Shift data or update indexes for all timestamps after this one, if
-      // necessary.
-      if (nextTimestampIt != indexes.end()) {
-        for (auto updateIt = nextTimestampIt; updateIt != indexes.end();
-             ++updateIt) {
-          updateIt->second += nVariables;
-        }
+      // Shift existing data to make room for the new record
+      std::move_backward(data.begin() + dataIndex, data.end() - nVariables, data.end());
+
+      // Update indexes for all timestamps after the new one
+      for (auto iter = nextTimestampIt; iter != indexes.end(); ++iter) {
+        iter->second += nVariables;
       }
-      size_t rowIndex = dataIndex / nVariables;
-      counters[rowIndex] = 1;
-    } else {
-      throw std::out_of_range("Attempting to write beyond the buffer length");
     }
+    // Insert the new value
+    data[dataIndex + columnIndex] = value;
+
+    // Update the index for the new timestamp
+    indexes[timestamp] = dataIndex;
+
+    // Update the counters appropriately
+    size_t rowIndex = dataIndex / nVariables;
+    counters.resize(std::max(counters.size(), rowIndex + 1), 0); // Ensure counters vector is large enough
+    counters[rowIndex] = 1;
   }
   if (DEBUG) {
     std::cout << "Value " << value << " at timestamp " << timestamp
-              << " inserted !" << std::endl;
+        << " inserted !" << std::endl;
   }
 }
 
 void DynamicBuffer::print() const {
   // Debug method to print the contents of the buffer
-  for (const auto &pair : indexes) {
+  for (const auto &pair: indexes) {
     long timestamp = pair.first;
     size_t startIndex = pair.second;
 
@@ -176,13 +173,18 @@ const double *DynamicBuffer::getRecordByIndexPtr(size_t index) const {
 
 const double *DynamicBuffer::getSlice(long timestamp, size_t N,
                                       size_t &outSize) const {
+  if (DEBUG) {
+    std::cout << "Getting slice out for timestamp : " << timestamp
+        << " and N is : " << N
+        << " and buffer size is : " << indexes.size() << std::endl;
+  }
   auto it = indexes.find(timestamp);
   if (it != indexes.end()) {
     size_t targetIndex = it->second;
 
     size_t startIndex = (N > (targetIndex / nVariables + 1))
-                            ? 0
-                            : targetIndex - (N - 1) * nVariables;
+                          ? 0
+                          : targetIndex - (N - 1) * nVariables;
 
     // Calculate the size of the slice in terms of number of doubles
     outSize = std::min(data.size() - startIndex, N * nVariables);
@@ -203,11 +205,11 @@ std::vector<long> DynamicBuffer::getSliceTimestamps(long timestamp,
   if (it != indexes.end()) {
     size_t targetIndex = it->second;
     size_t startIndex = (N > (targetIndex / nVariables + 1))
-                            ? 0
-                            : targetIndex - (N - 1) * nVariables;
+                          ? 0
+                          : targetIndex - (N - 1) * nVariables;
     size_t endIndex = std::min(startIndex + N * nVariables, data.size());
 
-    for (auto &pair : indexes) {
+    for (auto &pair: indexes) {
       if (pair.second >= startIndex && pair.second < endIndex) {
         timestamps.push_back(pair.first);
       }
@@ -221,9 +223,9 @@ size_t DynamicBuffer::getNVariables() const { return nVariables; }
 void DynamicBuffer::removeFront(size_t removeCount) {
   if (DEBUG) {
     std::cout << "Removing " << removeCount << " elements from the front"
-              << std::endl;
+        << std::endl;
     std::cout << "Indexes size before removing: " << indexes.size()
-              << std::endl;
+        << std::endl;
   }
   size_t originalSize = data.size();
   size_t elementsToRemove = removeCount * nVariables;
@@ -248,7 +250,7 @@ void DynamicBuffer::removeFront(size_t removeCount) {
     // Adjust the indexes map:
     // Create a new map to store updated indexes
     std::map<long, size_t> updatedIndexes;
-    for (const auto &pair : indexes) {
+    for (const auto &pair: indexes) {
       if (pair.second >= elementsToRemove) {
         updatedIndexes[pair.first] = pair.second - elementsToRemove;
       }
@@ -269,6 +271,7 @@ long DynamicBuffer::minKey() const {
   }
   return indexes.begin()->first;
 }
+
 long DynamicBuffer::maxKey() const {
   if (indexes.empty()) {
     std::cerr << "Error: No data available." << std::endl;
@@ -282,7 +285,7 @@ size_t DynamicBuffer::getNumRows() const { return indexes.size(); }
 bool DynamicBuffer::hasEnoughRoomForNewRecord() {
   if (DEBUG) {
     std::cout << "In hasEnoughRoom.. indexes size : " << indexes.size()
-              << " pid is : " << getpid() << std::endl;
+        << " pid is : " << getpid() << std::endl;
   }
 
   if (indexes.size() < (DEFAULT_BUFFER_LENGTH_FACTOR * windowSize))
@@ -299,6 +302,15 @@ void DynamicBuffer::removeZeroCount() {
   int nZeros = countSubsequentZerosCounters();
   if (DEBUG) {
     std::cout << "Removing " << nZeros << " zero counters" << std::endl;
+    size_t nToPrint = 10000;
+    std::cout << "First " << nToPrint << " counters values : " << std::endl;
+    size_t elementsToPrint = std::min(counters.size(), nToPrint);
+    std::cout << "[";
+    for (size_t i = 0; i < elementsToPrint; ++i) {
+      std::cout << counters[i] << " ";
+    }
+
+    std::cout << "]" << std::endl;
   }
 
   if (nZeros > 0) {
@@ -308,7 +320,7 @@ void DynamicBuffer::removeZeroCount() {
 
 size_t DynamicBuffer::countSubsequentZerosCounters() {
   size_t count = 0;
-  for (auto value : counters) {
+  for (auto value: counters) {
     if (value == 0) {
       ++count;
     } else {
@@ -319,7 +331,12 @@ size_t DynamicBuffer::countSubsequentZerosCounters() {
 }
 
 void DynamicBuffer::decrementCounters(const std::vector<long> &timestamps) {
-  for (long timestamp : timestamps) {
+  if (DEBUG) {
+    std::cout << "Decrementing counters for " << timestamps.size()
+        << " elements." << std::endl;
+  }
+
+  for (long timestamp: timestamps) {
     auto it = indexes.find(timestamp);
     if (it != indexes.end()) {
       size_t index = it->second;
@@ -333,10 +350,18 @@ void DynamicBuffer::decrementCounters(const std::vector<long> &timestamps) {
 
 void DynamicBuffer::printCounters() const {
   std::cout << "Counters: ";
-  for (auto value : counters) {
+  for (auto value: counters) {
     std::cout << value << " ";
   }
   std::cout << std::endl;
 }
 
 std::vector<int> DynamicBuffer::getCounters() const { return counters; }
+
+void DynamicBuffer::printIndexes() const {
+  std::cout << "Indexes: ";
+  for (auto pair: indexes) {
+    std::cout << pair.first << " : " << pair.second << " | ";
+  }
+  std::cout << std::endl;
+}

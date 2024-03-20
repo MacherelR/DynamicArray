@@ -7,3 +7,5 @@ DynamicBufferApp
 CMakelists.txt
 main.cpp
 DynamicBufferWrapper.cpp
+/Google_tests
+/.DS_Store

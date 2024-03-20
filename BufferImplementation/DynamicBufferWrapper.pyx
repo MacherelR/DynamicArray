@@ -1,5 +1,5 @@
 # distutils: language = c++
-# distutils: sources = DynamicBuffer.cpp
+# distutils: sources = DynamicBuffer_lib/DynamicBuffer.cpp
 
 from libc.stdint cimport int64_t
 from libcpp.vector cimport vector
@@ -9,7 +9,7 @@ cimport numpy as np
 
 np.import_array()
 
-cdef extern from "DynamicBuffer.h":
+cdef extern from "DynamicBuffer_lib/DynamicBuffer.h":
     cdef cppclass DynamicBuffer:
         DynamicBuffer(size_t nVariables, size_t windowSize) except +
         bool deleteRecord(long timestamp)
