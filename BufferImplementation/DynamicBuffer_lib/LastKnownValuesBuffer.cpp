@@ -68,8 +68,6 @@ bool LastKnownValuesBuffer::updateLastKnownValue(long timestamp, size_t columnIn
     for (size_t i = 0; i < nVariables; ++i) {
       data[dataIndex + i] = data[previousRowIndex + i];
     }
-    // std::fill_n(data.begin() + dataIndex, nVariables,
-    //             std::nan("")); // Prepare space for new data
     data[dataIndex + columnIndex] = value; // Insert new value at the correct column
 
     // Update the index for the new timestamp

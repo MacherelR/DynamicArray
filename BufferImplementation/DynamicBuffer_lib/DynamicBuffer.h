@@ -18,6 +18,7 @@ protected:
   size_t bufferLength;
   std::vector<double> data; // Array containing the values
   std::vector<int> counters;
+  std::map<long, size_t> variableUpdates;
 
 public:
   DynamicBuffer(size_t nVariables, size_t windowSize);
@@ -73,6 +74,8 @@ public:
   void printIndexes() const;
 
   void printData() const;
+
+  size_t getVariableUpdateCount(long timestamp);
 };
 
 #endif // DYNAMIC_BUFFER_H
