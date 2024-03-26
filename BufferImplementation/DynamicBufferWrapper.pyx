@@ -1,9 +1,9 @@
 # distutils: language = c++
 # distutils: sources = DynamicBuffer_lib/DynamicBuffer.cpp
-
 from libc.stdint cimport int64_t
 from libcpp.vector cimport vector
-from cpython cimport bool, array
+from cpython cimport array
+from libcpp cimport bool
 import numpy as np
 cimport numpy as np
 
@@ -13,7 +13,7 @@ cdef extern from "DynamicBuffer_lib/DynamicBuffer.h":
     cdef cppclass DynamicBuffer:
         DynamicBuffer(size_t nVariables, size_t windowSize) except +
         bool deleteRecord(long timestamp)
-        void addOrUpdateRecord(long timestamp, size_t column_index, double value)
+        bool addOrUpdateRecord(long timestamp, size_t column_index, double value)
         void print()
         const double *getRecordByTimestampPtr(long timestamp, size_t &outSize) const
         const double *getSlice(long timestamp, size_t N, size_t &outSize) const
@@ -27,6 +27,12 @@ cdef extern from "DynamicBuffer_lib/DynamicBuffer.h":
         vector[int] getCounters() const
         void printCounters() const
 
+cdef extern from "DynamicBuffer_lib/LastKnownValuesBuffer.h":
+    cdef cppclass LastKnownValuesBuffer(DynamicBuffer):
+        LastKnownValuesBuffer(size_t nVariables, size_t windowSize) except +
+        bool updateLastKnownValue(long timestamp, size_t column_index, double value)
+
+
 cdef class PyDynamicBuffer:
     cdef DynamicBuffer *thisptr
     def __cinit__(self, size_t nVariables, size_t windowSize):
@@ -39,7 +45,8 @@ cdef class PyDynamicBuffer:
         return self.thisptr.deleteRecord(timestamp)
 
     def add_or_update_record(self, long timestamp, size_t column_index, double value):
-        self.thisptr.addOrUpdateRecord(timestamp, column_index, value)
+        cdef bool res = self.thisptr.addOrUpdateRecord(timestamp, column_index, value)
+        return res
 
     def print(self):
         self.thisptr.print()
@@ -97,3 +104,12 @@ cdef class PyDynamicBuffer:
 
     def print_counters(self):
         self.thisptr.printCounters()
+
+
+cdef class PyLastKnownValuesBuffer(PyDynamicBuffer):
+    def __cinit__(self, size_t nVariables, size_t windowSize):
+        self.thisptr = new LastKnownValuesBuffer(nVariables, windowSize)
+
+    def update_last_known_value(self, long timestamp, size_t column_index, double value):
+        cdef bool res = (<LastKnownValuesBuffer*>self.thisptr).updateLastKnownValue(timestamp, column_index, value)
+        return res

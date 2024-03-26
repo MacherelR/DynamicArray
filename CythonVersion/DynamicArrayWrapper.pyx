@@ -2,7 +2,8 @@
 # distutils: sources = DynamicArrayCython.cpp
 
 from libcpp.vector cimport vector
-from cpython cimport bool, array
+from cpython cimport array
+from libcpp cimport bool
 import numpy as np
 cimport numpy as np
 
@@ -18,7 +19,7 @@ cdef extern from "DynamicArrayCython.h":
         void print() const
         long minKey() const
         long maxKey() const
-        void addOrUpdateRow(long timestamp, size_t column_index, double value)
+        bool addOrUpdateRow(long timestamp, size_t column_index, double value)
         vector[double] getRow(long timestamp)
         vector[double] getRowByIndex(int index)
         vector[vector[double]] getSlice(long timestamp, size_t numItems)
@@ -67,7 +68,8 @@ cdef class PyDynamicArrayCython:
         return self.thisptr.maxKey()
 
     def add_or_update_row(self, long timestamp, size_t column_index, double value):
-        self.thisptr.addOrUpdateRow(timestamp, column_index, value)
+        cdef bool success = self.thisptr.addOrUpdateRow(timestamp, column_index, value)
+        return success
 
     def get_row(self, long timestamp):
         cdef vector[double] row = self.thisptr.getRow(timestamp)

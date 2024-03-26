@@ -24,7 +24,7 @@ public:
 
   bool deleteRecord(long timestamp);
 
-  void addOrUpdateRecord(long timestamp, size_t column_index, double value);
+  bool addOrUpdateRecord(long timestamp, size_t columnIndex, double value);
 
   double &at(size_t row, size_t col);
 
@@ -33,15 +33,19 @@ public:
   void print() const;
 
   std::vector<double> getRecordByTimestamp(long timestamp) const;
+
   std::vector<double> getRecordByIndex(size_t index) const;
 
   const double *getRecordByTimestampPtr(long timestamp, size_t &outSize) const;
+
   const double *getRecordByIndexPtr(size_t index) const;
 
   const double *getSlice(long timestamp, size_t N, size_t &outSize) const;
+
   std::vector<long> getSliceTimestamps(long timestamp, size_t N) const;
 
   std::vector<double> getSliceByTimestamp(long start, long end) const;
+
   std::vector<double> getSliceByIndex(size_t start, size_t end) const;
 
   size_t getNVariables() const;
@@ -49,17 +53,26 @@ public:
   void removeFront(size_t removeCount);
 
   long minKey() const;
+
   long maxKey() const;
+
   size_t getNumRows() const;
 
   bool hasEnoughRoomForNewRecord();
+
   size_t countSubsequentZerosCounters();
+
   void removeZeroCount();
+
   void decrementCounters(const std::vector<long> &timestamps);
 
   void printCounters() const;
+
   std::vector<int> getCounters() const;
+
   void printIndexes() const;
+
+  void printData() const;
 };
 
 #endif // DYNAMIC_BUFFER_H

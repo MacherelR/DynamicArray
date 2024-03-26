@@ -1,6 +1,6 @@
-#include "btree/map.h"
 #include <algorithm> // For std::find_if
 #include <iostream>
+#include <map>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <sstream>
@@ -10,9 +10,8 @@ namespace py = pybind11;
 
 class DynamicArrayCython {
 protected:
-  btree::map<long, std::vector<double>>
-      data;    // 2D array for storing rows of data
-  size_t cols; // Number of columns, fixed
+  std::map<long, std::vector<double>> data; // 2D array for storing rows of data
+  size_t cols;                              // Number of columns, fixed
 
 public:
   DynamicArrayCython(size_t columns) : cols(columns) {}
@@ -85,12 +84,14 @@ public:
     return data.rbegin()->first; // The biggest key
   }
 
-  void addOrUpdateRow(long timestamp, size_t column_index, double value) {
+  bool addOrUpdateRow(long timestamp, size_t column_index, double value) {
     if (column_index >= cols) {
-      std::cerr << "Error: Column index out of bounds." << std::endl;
-      return;
+      throw std::out_of_range("Column index out of bounds.");
     }
-
+    bool newEntry = false;
+    if (!data.contains(timestamp)) {
+      newEntry = true;
+    }
     auto &row =
         data[timestamp]; // This will default-construct a vector if not found
     if (row.size() < cols) {
@@ -98,6 +99,7 @@ public:
                                       // fill with NaNs if needed
     }
     row[column_index] = value;
+    return newEntry;
   }
 
   std::vector<double> getRow(long timestamp) {

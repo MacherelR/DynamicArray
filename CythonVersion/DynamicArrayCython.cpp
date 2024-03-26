@@ -70,11 +70,16 @@ long DynamicArrayCython::maxKey() const {
   return data.rbegin()->first; // The biggest key
 }
 
-void DynamicArrayCython::addOrUpdateRow(long timestamp, size_t column_index,
+bool DynamicArrayCython::addOrUpdateRow(long timestamp, size_t column_index,
                                         double value) {
   if (column_index >= cols) {
-    std::cerr << "Error: Column index out of bounds." << std::endl;
-    return;
+    throw std::out_of_range("Column index out of range");
+  }
+
+  auto entryIt = data.find(timestamp);
+  bool newEntry = true;
+  if (entryIt != data.end()) {
+    newEntry = false;
   }
 
   auto &row =
@@ -84,6 +89,7 @@ void DynamicArrayCython::addOrUpdateRow(long timestamp, size_t column_index,
                                     // fill with NaNs if needed
   }
   row[column_index] = value;
+  return newEntry;
 }
 
 std::vector<double> DynamicArrayCython::getRow(long timestamp) {

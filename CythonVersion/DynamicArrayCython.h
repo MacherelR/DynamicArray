@@ -10,7 +10,7 @@
 class DynamicArrayCython {
 protected:
   std::map<long, std::vector<double>> data; // 2D array for storing rows of data
-  size_t cols;                             // Number of columns, fixed
+  size_t cols;                              // Number of columns, fixed
 
 public:
   DynamicArrayCython(size_t columns);
@@ -27,7 +27,7 @@ public:
   long minKey() const;
   long maxKey() const;
 
-  void addOrUpdateRow(long timestamp, size_t column_index, double value);
+  bool addOrUpdateRow(long timestamp, size_t column_index, double value);
 
   std::vector<double> getRow(long timestamp);
   std::vector<double> getRowByIndex(int index);
