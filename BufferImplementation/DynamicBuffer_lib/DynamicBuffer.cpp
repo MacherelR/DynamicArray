@@ -1,6 +1,7 @@
 #include "DynamicBuffer.h"
 #include "constants.h"
 #include <algorithm>
+#include <cmath>
 #include <unistd.h>
 #include <vector>
 
@@ -63,7 +64,10 @@ bool DynamicBuffer::addOrUpdateRecord(long timestamp, size_t columnIndex,
       data[dataIndex] = value;
       size_t rowIndex = dataIndex / nVariables;
       // size_t latestIndex = indexes.rbegin()->second / nVariables;
-      counters[rowIndex]++;
+      // only increment counter if the row is within the window range
+      if (rowIndex > (indexes.rbegin()->second / nVariables - windowSize)) {
+        counters[rowIndex]++;
+      }
       variableUpdates[timestamp]++;
     } else {
       throw std::out_of_range("Attempting to write beyond the buffer length");
@@ -108,7 +112,11 @@ bool DynamicBuffer::addOrUpdateRecord(long timestamp, size_t columnIndex,
     size_t rowIndex = dataIndex / nVariables;
     counters.resize(std::max(counters.size(), rowIndex + 1),
                     0); // Ensure counters vector is large enough
-    counters[rowIndex] = 1;
+    // only increment counter if the row is within the window range
+    if (rowIndex > (indexes.rbegin()->second / nVariables - windowSize)) {
+      counters[rowIndex] = 1;
+    }
+
     variableUpdates[timestamp] = 1;
   }
   if (DEBUG) {
@@ -224,14 +232,6 @@ std::vector<long> DynamicBuffer::getSliceTimestamps(long timestamp,
         timestamps.push_back(pair.first);
       }
     }
-    // size_t effectiveN = std::min(N,
-    // static_cast<size_t>(std::distance(indexes.begin(), std::next(it)))); auto
-    // startIter = (effectiveN > 0) ? std::prev(it, effectiveN - 1) : it;
-    // // Collect up to 'N' timestamps, starting from 'startIter' and including
-    // 'it' for (auto iter = startIter; effectiveN > 0 && iter != indexes.end()
-    // && effectiveN--; ++iter) {
-    //   timestamps.push_back(iter->first);
-    // }
   }
   return timestamps;
 }
@@ -280,7 +280,8 @@ void DynamicBuffer::removeFront(size_t removeCount) {
     // Adjust the variableUpdates map:
     auto varUpdatesIt = variableUpdates.begin();
     // advance iterator
-    for (size_t i = 0; i < removeCount && varUpdatesIt != variableUpdates.end(); ++i) {
+    for (size_t i = 0; i < removeCount && varUpdatesIt != variableUpdates.end();
+         ++i) {
       ++varUpdatesIt;
     }
     // Erase updates map entries
