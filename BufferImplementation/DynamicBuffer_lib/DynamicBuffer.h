@@ -27,10 +27,6 @@ public:
 
   bool addOrUpdateRecord(long timestamp, size_t columnIndex, double value);
 
-  double &at(size_t row, size_t col);
-
-  const double &at(size_t row, size_t col) const;
-
   void print() const;
 
   std::vector<double> getRecordByTimestamp(long timestamp) const;

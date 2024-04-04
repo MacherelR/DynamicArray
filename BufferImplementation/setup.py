@@ -2,7 +2,7 @@ import numpy
 from Cython.Build import cythonize
 from setuptools import setup, Extension
 
-extra_compile_args = ['-std=c++14', '-O3']
+extra_compile_args = ['-std=c++14']
 
 extensions = [
     Extension("dynamic_buffer",
