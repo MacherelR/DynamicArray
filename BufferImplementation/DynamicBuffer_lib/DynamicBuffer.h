@@ -18,6 +18,7 @@ protected:
   size_t bufferLength;
   std::vector<double> data; // Array containing the values
   std::vector<int> counters;
+  std::map<long, size_t> variableUpdates;
 
 public:
   DynamicBuffer(size_t nVariables, size_t windowSize);
@@ -25,10 +26,6 @@ public:
   bool deleteRecord(long timestamp);
 
   bool addOrUpdateRecord(long timestamp, size_t columnIndex, double value);
-
-  double &at(size_t row, size_t col);
-
-  const double &at(size_t row, size_t col) const;
 
   void print() const;
 
@@ -73,6 +70,8 @@ public:
   void printIndexes() const;
 
   void printData() const;
+
+  size_t getVariableUpdateCount(long timestamp);
 };
 
 #endif // DYNAMIC_BUFFER_H

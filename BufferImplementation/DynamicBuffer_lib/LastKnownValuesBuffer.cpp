@@ -5,8 +5,6 @@
 #include "LastKnownValuesBuffer.h"
 #include "DynamicBuffer.h"
 
-const bool DEBUG = false;
-
 LastKnownValuesBuffer::LastKnownValuesBuffer(size_t nVariables, size_t windowSize) : DynamicBuffer(
   nVariables, windowSize) {
 }
@@ -15,11 +13,6 @@ bool LastKnownValuesBuffer::updateLastKnownValue(long timestamp, size_t columnIn
   bool newEntry = true;
   if (columnIndex >= nVariables) {
     throw std::invalid_argument("Column index out of range");
-  }
-  if (DEBUG) {
-    std::cout << "Inserting or updating data. Size is : " << indexes.size()
-        << ", Timestamp is : " << timestamp << ", value is : " << value
-        << std::endl;
   }
 
   size_t dataIndex;
@@ -68,8 +61,6 @@ bool LastKnownValuesBuffer::updateLastKnownValue(long timestamp, size_t columnIn
     for (size_t i = 0; i < nVariables; ++i) {
       data[dataIndex + i] = data[previousRowIndex + i];
     }
-    // std::fill_n(data.begin() + dataIndex, nVariables,
-    //             std::nan("")); // Prepare space for new data
     data[dataIndex + columnIndex] = value; // Insert new value at the correct column
 
     // Update the index for the new timestamp
@@ -80,10 +71,6 @@ bool LastKnownValuesBuffer::updateLastKnownValue(long timestamp, size_t columnIn
     counters.resize(std::max(counters.size(), rowIndex + 1),
                     0); // Ensure counters vector is large enough
     counters[rowIndex] = 1;
-  }
-  if (DEBUG) {
-    std::cout << "Value " << value << " at timestamp " << timestamp
-        << " inserted !" << std::endl;
   }
 
   return newEntry;

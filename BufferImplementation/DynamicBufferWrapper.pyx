@@ -26,6 +26,7 @@ cdef extern from "DynamicBuffer_lib/DynamicBuffer.h":
         void decrementCounters(const vector[long]& timestamps)
         vector[int] getCounters() const
         void printCounters() const
+        size_t getVariableUpdateCount(long timestamp)
 
 cdef extern from "DynamicBuffer_lib/LastKnownValuesBuffer.h":
     cdef cppclass LastKnownValuesBuffer(DynamicBuffer):
@@ -104,6 +105,9 @@ cdef class PyDynamicBuffer:
 
     def print_counters(self):
         self.thisptr.printCounters()
+
+    def get_variable_update_count(self, long timestamp):
+        return self.thisptr.getVariableUpdateCount(timestamp)
 
 
 cdef class PyLastKnownValuesBuffer(PyDynamicBuffer):
