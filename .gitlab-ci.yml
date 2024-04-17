@@ -1,0 +1,90 @@
+stages:
+  - test
+  - test-cpp
+  - build-python-wheel
+  - upload-python-wheel
+  - build-cpp
+  - test-python
+
+variables:
+  EXTENSION_DIR: "DynamicBufferCpp/"
+  EXTENSION_TEST_DIR: "DynamicBufferCpp/Google_tests/"
+  DOCKER_CLI_EXPERIMENTAL: "enabled"
+
+include:
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+
+gemnasium-python-dependency_scanning:
+  image:
+    name: registry.gitlab.com/gitlab-org/security-products/analyzers/gemnasium-python:2-python-3.9
+
+checkstyle:
+  stage: test-python
+  image: python:3.9.12-bullseye
+  before_script:
+    - pip install dynamic-buffer --extra-index-url https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.forge.hefr.ch/api/v4/projects/$CI_PROJECT_ID/packages/pypi/simple
+    - pip install ".[flake8]"
+  script:
+    - flake8 --output-file checkstyle-report.txt
+  after_script:
+    - flake8_junit checkstyle-report.txt checkstyle-report.xml
+  artifacts:
+    when: always
+    paths:
+      - checkstyle-report.xml
+    reports:
+      junit:
+        - checkstyle-report.xml
+
+tests-cpp:
+  stage: test-cpp
+  image: ubuntu:20.04
+  before_script:
+    - cd $EXTENSION_TEST_DIR
+  script:
+    - export DEBIAN_FRONTEND=noninteractive
+    - apt update
+    - apt install -y git build-essential cmake libgtest-dev g++
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make -j
+    - ./Google_Tests_run
+
+build-python-wheel:
+  stage: build-python-wheel
+  image: python:3.9.12-bullseye
+  before_script:
+    - pip install build
+    - cd $EXTENSION_DIR
+  script:
+    - python -m build
+  artifacts:
+    paths:
+      - $EXTENSION_DIR/dist/*
+
+upload-python-wheel:
+  stage: upload-python-wheel
+  image: python:3.9.12-bullseye
+  dependencies:
+    - build-python-wheel
+  before_script:
+    - pip install twine
+  script:
+    - twine upload $EXTENSION_DIR/dist/* --repository gitlab --config-file .pypirc
+
+tests-python:
+  stage: test-python
+  image: python:3.9.12-bullseye
+  before_script:
+    - pip install dynamic-buffer --extra-index-url https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.forge.hefr.ch/api/v4/projects/$CI_PROJECT_ID/packages/pypi/simple
+    - pip install ".[test]"
+  script:
+    - pytest tests -v --junitxml=tests-report.xml
+  artifacts:
+    when: always
+    paths:
+      - tests-report.xml
+    reports:
+      junit:
+        - tests-report.xml

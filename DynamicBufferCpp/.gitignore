@@ -1,0 +1,9 @@
+/build
+/.idea
+/.vscode
+/cmake-build-debug
+dynamic_buffer.cpython-311-darwin.so
+DynamicBufferApp
+main.cpp
+DynamicBufferWrapper.cpp
+/.DS_Store
