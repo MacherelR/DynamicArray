@@ -1,0 +1,2 @@
+include src/DynamicBufferWrapper.pyx
+recursive-include src/DynamicBuffer_lib *.cpp *.h
